@@ -6,6 +6,8 @@ from werkzeug.utils import secure_filename
 import imghdr
 from flask_cors import CORS 
 import re
+import eng_to_ipa as ipa
+from googletrans import Translator
 
 app = Flask(__name__)
 
@@ -181,5 +183,24 @@ def extract_text():
         if 'tmp_path' in locals() and os.path.exists(tmp_path):
             os.unlink(tmp_path)
 
+translator = Translator()
+
+
+@app.route("/api/ipa-meaning", methods=["POST"])
+def ipa_meaning():
+    data = request.get_json()
+    text = data.get("text", "")
+
+    # Lấy phiên âm IPA
+    ipa_result = ipa.convert(text)
+
+    # Dịch nguyên câu
+    try:
+        meaning = translator.translate(text, dest="vi").text
+    except Exception as e:
+        meaning = f"Lỗi dịch: {str(e)}"
+
+    return jsonify({"ipa": ipa_result, "meaning": meaning})
+
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0", port=5000)
